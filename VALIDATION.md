@@ -169,7 +169,7 @@ All dependencies specified in `requirements.txt`:
 ✓ MLR: Standard linear regression trained
 
 ✓ SVR: GridSearchCV with multiple kernels
-  Best params: C=0.1, kernel=linear, epsilon=0.1
+  Best params: C=0.1, kernel='linear', epsilon=0.1
   Score: 0.1256 MAE
 
 ✓ ANN: Keras model with [64, 32, 16] architecture
