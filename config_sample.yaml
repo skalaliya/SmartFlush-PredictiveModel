@@ -1,0 +1,81 @@
+project:
+  name: "SmartFlush Sample"
+  version: "0.1.0"
+
+paths:
+  data_dir: "data"
+  reports_dir: "reports"
+  results_dir: "results"
+  logs_dir: "logs"
+
+data:
+  files:
+    - "sample_dataset.xlsx"
+  sheet_name: 0
+  target_column: "flush_volume_class"
+  categorical_features: ["case_of_flush"]
+  test_size: 0.2
+  random_state: 42
+  stratify: true
+
+preprocessing:
+  imputation_strategy: "median"
+  vif_threshold: 5.0
+  include_residual_features: true
+  polynomial_degree: 2
+  interaction_only: false
+  validation_split: 0.2
+
+grid_search:
+  cv_folds: 3
+  scoring: "neg_mean_absolute_error"
+  n_jobs: -1
+
+models:
+  ridge:
+    enabled: true
+    grid:
+      alpha: [0.1, 1.0]
+  multinomial_logistic:
+    enabled: true
+    grid:
+      classifier__C: [0.1, 1.0]
+  multinomial_logistic_prob:
+    enabled: true
+    thresholds: [0.5]
+  svc:
+    enabled: true
+    kernels: ["linear"]
+    grid:
+      classifier__C: [0.1, 1.0]
+      classifier__degree: [1]
+      classifier__gamma: ["scale"]
+      classifier__kernel: ["linear"]
+  svc_prob:
+    enabled: false
+  ann:
+    enabled: false
+
+evaluation:
+  safe_flush_threshold: 0.95
+  baseline_flush_volume: 6.0
+  competitor:
+    safe_accuracy: 0.56
+    mae: 0.93
+outputs:
+  save_models: false
+  tables_dir: "results/tables"
+  figures_dir: "results/figures"
+  models_dir: "results/models"
+  reports_dir: "reports"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s | %(name)s | %(levelname)s | %(message)s"
+  file_name: "smartflush.log"
+
+stages:
+  run_data_loading: true
+  run_eda: true
+  run_modeling: true
+  run_reporting: true

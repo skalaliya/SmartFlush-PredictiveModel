@@ -18,6 +18,9 @@ from typing import Any, Dict, Iterable
 
 import numpy as np
 import pandas as pd
+from sklearn import metrics as sk_metrics
+
+from . import utils
 
 LOGGER = logging.getLogger(__name__)
 
@@ -67,18 +70,19 @@ def compare_against_competitor(metric_value: float, competitor_value: float, met
 
 def build_confusion_matrix(y_true: Iterable[int], y_pred: Iterable[int]) -> pd.DataFrame:
     """
-    Placeholder for generating a confusion matrix.
+    Build a confusion matrix as a pandas DataFrame.
     """
-    LOGGER.debug("Building confusion matrix placeholder.")
-    raise NotImplementedError("Implement confusion matrix generation.")
+    matrix = sk_metrics.confusion_matrix(y_true, y_pred)
+    labels = np.unique(np.concatenate([np.asarray(list(y_true)), np.asarray(list(y_pred))]))
+    return pd.DataFrame(matrix, index=labels, columns=labels)
 
 
 def classification_report(y_true: Iterable[int], y_pred: Iterable[int]) -> Dict[str, Any]:
     """
-    Placeholder for generating a classification report (precision/recall/F1).
+    Produce a classification report dictionary (precision/recall/F1).
     """
-    LOGGER.debug("Creating classification report placeholder.")
-    raise NotImplementedError("Implement classification report generation.")
+    report = sk_metrics.classification_report(y_true, y_pred, output_dict=True, zero_division=0)
+    return report
 
 
 def evaluate_models(artifacts: Dict[str, Any], config: Dict[str, Any]) -> Dict[str, Any]:
@@ -86,7 +90,73 @@ def evaluate_models(artifacts: Dict[str, Any], config: Dict[str, Any]) -> Dict[s
     Evaluate trained models using custom metrics and return organised results.
     """
     LOGGER.info("Evaluating models using SmartFlush metrics.")
-    raise NotImplementedError("Implement model evaluation workflow.")
+    evaluation_cfg = config.get("evaluation", {})
+    safe_threshold = evaluation_cfg.get("safe_flush_threshold", 0.95)
+    competitor_cfg = evaluation_cfg.get("competitor", {})
+    baseline_flush_volume = evaluation_cfg.get("baseline_flush_volume", 6.0)
+
+    if hasattr(artifacts, "evaluation_data"):
+        eval_data = artifacts.evaluation_data
+    else:
+        eval_data = artifacts
+
+    y_true = np.asarray(eval_data.get("y_test"))
+    predictions_map = eval_data.get("predictions", {})
+
+    results: Dict[str, Any] = {}
+    summary_rows = []
+
+    for model_name, y_pred in predictions_map.items():
+        y_pred_arr = np.asarray(y_pred, dtype=float)
+
+        metrics_dict = {}
+        metrics_dict["safe_flush_accuracy"] = safe_flush_accuracy(y_true, y_pred_arr, safe_threshold)
+        metrics_dict["mae"] = sk_metrics.mean_absolute_error(y_true, y_pred_arr)
+        metrics_dict["water_mae"] = water_efficiency_mae(y_true, y_pred_arr)
+        mse = sk_metrics.mean_squared_error(y_true, y_pred_arr)
+        metrics_dict["rmse"] = float(np.sqrt(mse))
+        metrics_dict["r2"] = sk_metrics.r2_score(y_true, y_pred_arr)
+
+        discrete_pred = np.allclose(y_pred_arr, np.round(y_pred_arr))
+        if discrete_pred:
+            y_pred_discrete = np.round(y_pred_arr).astype(int)
+            conf_matrix = build_confusion_matrix(y_true, y_pred_discrete)
+            class_report = classification_report(y_true, y_pred_discrete)
+        else:
+            conf_matrix = None
+            class_report = None
+
+        water_savings = utils.compute_water_savings(y_pred_arr, baseline_flush_volume, config)
+
+        metrics_dict.update(
+            {
+                "confusion_matrix": conf_matrix,
+                "classification_report": class_report,
+                "water_savings": water_savings,
+            }
+        )
+
+        if competitor_cfg:
+            competitor_accuracy = competitor_cfg.get("safe_accuracy", 0.0)
+            metrics_dict["safe_flush_vs_competitor"] = compare_against_competitor(
+                metrics_dict["safe_flush_accuracy"], competitor_accuracy, "safe_flush_accuracy"
+            )
+            competitor_mae = competitor_cfg.get("mae", 0.0)
+            metrics_dict["mae_vs_competitor"] = compare_against_competitor(metrics_dict["mae"], competitor_mae, "mae")
+
+        results[model_name] = metrics_dict
+        summary_rows.append(
+            {
+                "model": model_name,
+                "safe_flush_accuracy": metrics_dict["safe_flush_accuracy"],
+                "mae": metrics_dict["mae"],
+                "rmse": metrics_dict["rmse"],
+                "water_savings_percent": water_savings["savings_percent"],
+            }
+        )
+
+    results["summary_table"] = pd.DataFrame(summary_rows).sort_values("safe_flush_accuracy", ascending=False)
+    return results
 
 
 def save_reports(evaluation_results: Dict[str, Any], output_paths: Dict[str, Path]) -> None:
@@ -94,4 +164,19 @@ def save_reports(evaluation_results: Dict[str, Any], output_paths: Dict[str, Pat
     Persist evaluation outputs (tables, figures, reports) to disk.
     """
     LOGGER.info("Saving evaluation reports to %s", output_paths)
-    raise NotImplementedError("Implement report persistence.")
+    tables_dir = output_paths.get("tables_dir", Path("results/tables"))
+    tables_dir.mkdir(parents=True, exist_ok=True)
+
+    summary = evaluation_results.get("summary_table")
+    if isinstance(summary, pd.DataFrame):
+        summary.to_csv(tables_dir / "model_summary.csv", index=False)
+
+    for model_name, metrics_dict in evaluation_results.items():
+        if not isinstance(metrics_dict, dict):
+            continue
+        conf_matrix = metrics_dict.get("confusion_matrix")
+        if conf_matrix is not None:
+            conf_matrix.to_csv(tables_dir / f"{model_name}_confusion_matrix.csv")
+        class_report = metrics_dict.get("classification_report")
+        if class_report is not None:
+            pd.DataFrame(class_report).to_csv(tables_dir / f"{model_name}_classification_report.csv")

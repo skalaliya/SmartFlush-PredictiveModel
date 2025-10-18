@@ -13,9 +13,8 @@ paths:
 
 data:
   files:
-    - "Combined_Data.xlsx"
-    - "mon_fichier.xlsx"
-  sheet_name: null            # Override per file if needed
+    - "fulldata.xlsx"
+  sheet_name: 0            # Use sheet index 0 (Sheet 1 - fulldata)
   target_column: "flush_volume_class"
   categorical_features: ["case_of_flush"]
   datetime_columns: []
@@ -34,6 +33,7 @@ preprocessing:
   polynomial_degree: 2
   interaction_only: false
   target_offset: 1.0
+  validation_split: 0.1
 
 eda:
   chi2_alpha: 0.05
@@ -62,10 +62,8 @@ models:
     enabled: true
     add_constant: 1.0
     grid:
-      C: [0.1, 1.0, 10.0]
-      penalty: ["l2"]
-      solver: ["lbfgs"]
-      max_iter: [500]
+      classifier__C: [0.1, 1.0, 10.0]
+      classifier__max_iter: [500]
   multinomial_logistic_prob:
     enabled: true
     thresholds: [0.4, 0.5, 0.6]
@@ -73,14 +71,15 @@ models:
     enabled: true
     kernels: ["linear", "poly"]
     grid:
-      C: [0.1, 1.0, 10.0]
-      degree: [1, 2, 3]
-      gamma: ["scale"]
+      classifier__C: [0.1, 1.0, 10.0]
+      classifier__degree: [1, 2, 3]
+      classifier__gamma: ["scale"]
+      classifier__kernel: ["linear", "poly"]
   svc_prob:
     enabled: true
     thresholds: [0.45, 0.5, 0.55]
   ann:
-    enabled: true
+    enabled: false
     architecture: [128, 64, 32]
     dropout_rate: 0.2
     learning_rate: 0.001
@@ -92,6 +91,7 @@ models:
 evaluation:
   safe_flush_threshold: 0.95
   mae_unit: "liters"
+  baseline_flush_volume: 6.0
   competitor:
     accuracy: 0.31
     safe_accuracy: 0.56

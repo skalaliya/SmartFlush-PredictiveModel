@@ -37,29 +37,28 @@ SmartFlush-PredictiveModel-main/
 ```
 
 ## Getting Started
-1. **Create a virtual environment**
+1. **Create a UV-managed environment (recommended)**
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # Windows: .venv\Scripts\activate
+   uv venv --python 3.11
    ```
 2. **Install dependencies**
    ```bash
-   pip install -r requirements.txt
+   uv pip install -r requirements.txt
    ```
 3. **Populate data inputs**
    - Drop Excel datasets into `data/` (raw subfolders optional).
-   - Update `config.yaml` with filenames, sheet names, and target column metadata.
+   - Update `config.yaml` with filenames, per-file sheet selections (`data.sheet_name`), and target column metadata.
 
 ## Usage
 - Run the full pipeline (load ➜ explore ➜ model ➜ evaluate ➜ report):
   ```bash
-  python main.py --config config.yaml
+  uv run python main.py --config config.yaml
   ```
 - Generate only EDA assets:
   ```bash
-  python main.py --config config.yaml --run-stage eda
+  uv run python main.py --config config.yaml --run-stage eda
   ```
-- See `python main.py --help` for staging controls, logging verbosity, and override flags (data paths, target column, threshold tuning).
+- See `uv run python main.py --help` for staging controls, logging verbosity, and override flags (data paths, target column, threshold tuning).
 
 ## Configuration Highlights (`config.yaml`)
 - `data`: file list, target column, train/test proportions, random seed, expected sheet names.
@@ -79,23 +78,19 @@ SmartFlush-PredictiveModel-main/
 | ANN (dense) | TBD | TBD | TBD | ReLU stack + dropout + sigmoid |
 | **Competitor** | 0.93 (MAE) | 0.56 | 31% accuracy | Provided industry benchmark |
 
-Populate the table via `results/model_performance.csv` exported from `metrics.save_comparison_table`.
+Populate the table via `results/tables/model_summary.csv` exported from `metrics.save_reports`.
 
 ## Testing
 ```bash
-pytest
+uv run pytest
 ```
-Each test currently validates interface contracts so that implementation can grow iteratively.
+The suite exercises data ingestion, EDA output generation, metric computations, and model orchestration against lightweight fixtures.
 
 ## Reporting & Compliance
 - `reports/` captures PDF summaries, KPI scorecards, and internal audit artifacts.
 - `results/` preserves serialized models, hyperparameter logs, learning curves, and visualization PNGs.
 - Logging is centrally configured via `config.yaml` and routed to `logs/` (created on demand).
-
-## Next Steps
-- Flesh out the stubbed functions within `src/` to perform the described analytics.
-- Extend `tests/` with behavioural checks alongside the structural placeholders shipped here.
-- Integrate CI/CD (GitHub Actions, GitLab CI) for linting, testing, and artifact promotion.
+- `metrics.save_reports` emits comparison tables and per-model diagnostics (confusion matrices, classification reports) into `results/tables/`.
 
 ## License & Support
 - See `LICENSE` for usage terms.
