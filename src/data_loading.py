@@ -44,6 +44,10 @@ class DataLoader:
         try:
             logger.info(f"Loading data from {self.file_path}")
             
+            # Default to first sheet if sheet_name is None
+            if sheet_name is None:
+                sheet_name = 0
+            
             # Try openpyxl engine first (for .xlsx)
             if self.file_path.suffix == '.xlsx':
                 self.data = pd.read_excel(self.file_path, sheet_name=sheet_name, engine='openpyxl')
