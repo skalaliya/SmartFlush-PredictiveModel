@@ -205,3 +205,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# SmartFlush specific
+logs/
+results/models/
+reports/figures/*.png
+data/sensor_data.xlsx
+*.h5
+*.pkl
