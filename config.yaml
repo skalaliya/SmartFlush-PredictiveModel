@@ -1,0 +1,97 @@
+# SmartFlush Predictive Model Configuration
+
+# Data Paths
+data:
+  raw_data_dir: "data/"
+  combined_data: "data/Combined_Data.xlsx"
+  additional_data: "data/mon_fichier.xlsx"
+  
+# Output Paths
+outputs:
+  results_dir: "results/"
+  reports_dir: "reports/"
+  plots_dir: "results/plots/"
+  models_dir: "results/models/"
+
+# Data Processing Parameters
+preprocessing:
+  vif_threshold: 10.0  # Threshold for multicollinearity detection
+  polynomial_degree: 2
+  test_size: 0.2
+  random_state: 42
+  
+# Model Parameters
+models:
+  ridge:
+    alphas: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
+    add_one_to_predictions: true
+    
+  logistic_regression:
+    C_values: [0.001, 0.01, 0.1, 1.0, 10.0, 100.0]
+    max_iter: 1000
+    multi_class: "multinomial"
+    add_one_to_predictions: true
+    
+  svc:
+    kernels: ["linear", "poly"]
+    C_values: [0.1, 1.0, 10.0]
+    probability: true
+    
+  ann:
+    hidden_layers: [128, 64, 32]
+    dropout_rate: 0.2
+    activation: "relu"
+    optimizer: "adam"
+    learning_rate: 0.001
+    batch_size: 32
+    epochs: 100
+    validation_split: 0.2
+    early_stopping_patience: 10
+
+# Probability Threshold Optimization
+threshold_optimization:
+  enabled: true
+  threshold_range: [0.3, 0.9]
+  threshold_step: 0.05
+  
+# Evaluation Metrics
+metrics:
+  competitor_baseline:
+    accuracy: 0.31
+    safe_flush_accuracy: 0.56
+    mae: 0.93
+
+# Water Usage Parameters
+water:
+  flush_volume_map:
+    1: 1.5
+    2: 1.9
+    3: 2.3
+    4: 2.7
+    5: 3.1
+    6: 3.5
+    7: 3.9
+    8: 4.3
+    9: 4.7
+    10: 5.3
+    11: 6.1
+  cost_per_1000L: 4.0  # Cost in euros per 1000 liters
+
+# Hotel Scenario Parameters
+hotel:
+  num_rooms: 100
+  flushes_per_day: 5
+  days_per_year: 365
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "results/smartflush.log"
+
+# Visualization Parameters
+visualization:
+  figure_size: [12, 8]
+  dpi: 300
+  style: "seaborn-v0_8-darkgrid"
+  save_format: "png"
