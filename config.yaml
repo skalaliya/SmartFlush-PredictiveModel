@@ -1,0 +1,69 @@
+# SmartFlush Predictive Model Configuration
+
+# Data Configuration
+data:
+  input_path: "data/sensor_data.xlsx"
+  output_path: "results/"
+  test_size: 0.2
+  random_state: 42
+
+# Feature Engineering
+features:
+  polynomial_degree: 2
+  scaling_method: "standard"  # standard, minmax, robust
+  vif_threshold: 10.0
+
+# Model Configuration
+models:
+  ridge:
+    enabled: true
+    alpha_range: [0.1, 1.0, 10.0, 100.0]
+    
+  mlr:
+    enabled: true
+    fit_intercept: true
+    
+  svc:
+    enabled: true
+    C_range: [0.1, 1.0, 10.0]
+    kernel_options: ['linear', 'rbf']
+    
+  ann:
+    enabled: true
+    hidden_layers: [64, 32, 16]
+    epochs: 100
+    batch_size: 32
+    learning_rate: 0.001
+    dropout_rate: 0.2
+
+# Grid Search Configuration
+grid_search:
+  cv_folds: 5
+  scoring: "neg_mean_absolute_error"
+  n_jobs: -1
+
+# EDA Configuration
+eda:
+  chi2_alpha: 0.05
+  pearson_threshold: 0.7
+  plot_figsize: [12, 8]
+
+# Metrics Configuration
+metrics:
+  safe_flush_threshold: 0.95
+  water_savings_baseline: 6.0  # liters per flush
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/smartflush.log"
+
+# Output Configuration
+output:
+  save_models: true
+  save_plots: true
+  save_reports: true
+  model_path: "results/models/"
+  plot_path: "reports/figures/"
+  report_path: "reports/"
