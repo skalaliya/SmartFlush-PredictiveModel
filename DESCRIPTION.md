@@ -1,0 +1,1 @@
+A Python-driven predictive model focused on enhancing the efficiency of smart flush systems. This project utilizes advanced data analysis to promote sustainable water management. Licensed under the MIT License.
